@@ -87,6 +87,41 @@ async def train(file_id: int, repo: MedicalCostRepository = Depends(get_reposito
     }
 
 
+@app.post("/predict")
+async def predict_cost(prediction_request: PredictionRequest):
+    file_id = prediction_request.file_id
+    subject = prediction_request.subject
+
+    model_path = os.path.join(MODEL_DIR, f"model_{file_id}.pkl")
+    if not os.path.exists(model_path):
+        raise HTTPException(status_code=404, detail="Model not found for the given file ID.")
+
+    model = joblib.load(model_path)
+
+    input_data = pd.DataFrame([{
+        'age': subject.age,
+        'bmi': subject.bmi,
+        'children': subject.children,
+        'gender': subject.gender,
+        'smoker': subject.smoker == "yes",
+        'region': subject.region
+    }])[COLUMN_ORDER]
+
+    predicted_cost = model.predict(input_data)[0]
+
+    return {
+        "predicted_cost": "${:,.2f}".format(predicted_cost),
+    }
+
+
+@app.get("/report/{file_id}")
+async def report(file_id: int):
+    plot_file = f"plot/plot_{file_id}.png"
+
+    # Serve the plot image
+    return FileResponse(plot_file, media_type="image/png")
+
+
 async def create_and_train_model(file_id, preprocessor, x, y):
     model = Pipeline(steps=[
         ('preprocessor', preprocessor),
@@ -149,39 +184,3 @@ async def save_plot(file_id, y_pred, y_test):
     plt.tight_layout()
     plt.savefig(f'{PLOT_DIR}/plot_{file_id}.png')
     plt.close()
-
-
-@app.post("/predict")
-async def predict_cost(prediction_request: PredictionRequest):
-    file_id = prediction_request.file_id
-    subject = prediction_request.subject
-
-    model_path = os.path.join(MODEL_DIR, f"model_{file_id}.pkl")
-    if not os.path.exists(model_path):
-        raise HTTPException(status_code=404, detail="Model not found for the given file ID.")
-
-    model = joblib.load(model_path)
-
-    input_data = pd.DataFrame([{
-        'age': subject.age,
-        'bmi': subject.bmi,
-        'children': subject.children,
-        'gender': subject.gender,
-        'smoker': subject.smoker == "yes",
-        'region': subject.region
-    }])[COLUMN_ORDER]
-
-    predicted_cost = model.predict(input_data)[0]
-
-    return {
-        "predicted_cost": "${:,.2f}".format(predicted_cost),
-    }
-
-
-@app.get("/report/{file_id}")
-async def report(file_id: int):
-    plot_file = f"plot/plot_{file_id}.png"
-
-    # Serve the plot image
-    return FileResponse(plot_file, media_type="image/png")
-
