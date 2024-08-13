@@ -9,8 +9,8 @@ import statsmodels.api as sm
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException
 from matplotlib import pyplot as plt
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
@@ -125,7 +125,7 @@ async def report(file_id: int):
 async def create_and_train_model(file_id, preprocessor, x, y):
     model = Pipeline(steps=[
         ('preprocessor', preprocessor),
-        ('regressor', LinearRegression())
+        ('regressor', RandomForestRegressor())
     ])
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
     model.fit(x_train, y_train)
@@ -157,6 +157,7 @@ async def create_preprocessor(medical_costs):
             ('cat', categorical_transformer, categorical_features)
         ]
     )
+
     return preprocessor, x, y
 
 
