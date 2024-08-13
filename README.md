@@ -1,5 +1,11 @@
 # Tech Challenge - Phase 1
 
+---
+
+Youtube video: https://youtu.be/s0FN0xRPuKs
+
+---
+
 Aníbal - Leonardo - Alysson
 
 ##### Pre-requisites
